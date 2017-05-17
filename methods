@@ -1,0 +1,195 @@
+import java.util.*;
+import java.lang.RuntimeException;
+
+class Interval{
+	int start;
+	int end;
+	Interval(){
+		start=0;
+		end=0;
+	}
+	Interval(int start, int end){
+		this.start=start;
+		this.end=end;
+	};
+}
+
+public class Solution {
+    private static final int START = 1;
+
+    private static final int END = 0;
+    
+    private class Event {
+        int time;
+        int type; // end event is 0; start event is 1
+
+        public Event(int time, int type) {
+            this.time = time;
+            this.type = type;
+        }
+    }
+    public boolean canAttendMeetings(Interval[] intervals) {
+    	// Sort the intervals by start time
+    	Arrays.sort(intervals,(a,b)->(a.start-b.start));
+    	for(int i=1;i<intervals.length;i++){
+    		if(intervals[i].start<intervals[i-1].end){
+    			return false;
+    		}
+    	}
+    	return true;
+  	}
+    
+    public boolean canAttendMeetingsII(Interval[] intervals) {
+    	try{
+    		Arrays.sort(intervals, new IntervalComparator());
+    	}catch(Exception e){
+    		return false;
+    	}
+    	return true;
+  	}
+    
+    private class IntervalComparator implements Comparator<Interval>{
+    	@Override
+    	public int compare(Interval o1, Interval o2){
+    		if(o1.start<o2.start&&o1.end<=o2.start){
+    			return -1;
+    		}else if(o1.start>o2.start&&o1.start>=o2.end){
+    			return 1;
+    		}
+    		throw new RuntimeException();
+    	}
+    }
+    public int minMeetingRoomsIV(Interval[] intervals) {
+        int rooms = 0; // occupied meeting rooms
+        int res = 0;
+
+        // initialize an event queue based on event's happening time
+        Queue<Event> events = new PriorityQueue<>(new Comparator<Event>() {
+            @Override
+            public int compare(Event e1, Event e2) {
+                // for same time, let END event happens first to save rooms
+                return e1.time != e2.time ? 
+                       e1.time - e2.time : e1.type - e2.type;
+            }
+        });
+
+        // create event and push into event queue
+        for (Interval interval : intervals) {
+            events.offer(new Event(interval.start, START));
+            events.offer(new Event(interval.end, END));
+        }
+        
+        // process events
+        while (!events.isEmpty()) {
+            Event event = events.poll();
+            if (event.type == START) {
+                rooms++;
+                res = Math.max(res, rooms);
+            } else {
+                rooms--; 
+            }
+        }
+        
+        return res;
+    }
+    public int minMeetingRoomsV(Interval[] intervals) {
+        if(intervals == null || intervals.length == 0) return 0;
+        Arrays.sort(intervals, (a, b) -> (a.start - b.start));
+        int max = 0;
+        PriorityQueue<Interval> queue = new PriorityQueue<>(intervals.length, (a, b) -> (a.end - b.end));
+        for(int i = 0; i < intervals.length; i++){
+            while(!queue.isEmpty() && intervals[i].start >= queue.peek().end)
+                queue.poll();
+            queue.offer(intervals[i]);
+            max = Math.max(max, queue.size());
+        }
+        return max;
+    }
+	public int minMeetingRooms(Interval[] intervals){
+		if(intervals==null||intervals.length==0){
+			return 0;
+		}
+		Arrays.sort(intervals,(a,b)->(a.start-b.start));
+	    // Sort the intervals by start time
+	    //Arrays.sort(intervals, new Comparator<Interval>() {
+	    //    public int compare(Interval a, Interval b) { return a.start - b.start; }
+	    //});
+		
+		PriorityQueue<Interval> pq=new PriorityQueue<Interval>(intervals.length,
+				(a,b)->(a.end-b.end));
+		
+		pq.offer(intervals[0]);
+		
+		for(int i=1;i<intervals.length;i++){
+		       // get the meeting room that finishes earliest
+			Interval interval=pq.poll();
+			
+			if(intervals[i].start>=interval.end){
+			     // if the current meeting starts right after 
+	            // there's no need for a new room, merge the interval
+				interval.end=intervals[i].end;
+			}else{
+				// otherwise, this meeting needs a new room
+				pq.offer(intervals[i]);
+			}
+			// don't forget to put the meeting room back
+			pq.offer(interval);
+		}
+		
+		return pq.size();
+	}
+	 public int minMeetingRoomsII(Interval[] intervals) {
+	        int[] starts = new int[intervals.length];
+	        int[] ends = new int[intervals.length];
+	        for(int i=0; i<intervals.length; i++) {
+	            starts[i] = intervals[i].start;
+	            ends[i] = intervals[i].end;
+	        }
+	        Arrays.sort(starts);
+	        Arrays.sort(ends);
+	        int rooms = 0;
+	        int endsItr = 0;
+	        for(int i=0; i<starts.length; i++) {
+	            if(starts[i]<ends[endsItr])
+	                rooms++;
+	            else
+	                endsItr++;
+	        }
+	        return rooms;
+	 }
+	 public int minMeetingRoomsIII(Interval[] intervals) {
+		    //use TreeMap
+	        TreeMap<Integer,Integer> map=new TreeMap<Integer,Integer>();
+	        for(int i=0; i<intervals.length; i++) {
+	            map.put(intervals[i].start,map.getOrDefault(intervals[i].start, 0)+1);
+	            map.put(intervals[i].end,map.getOrDefault(intervals[i].end, 0)-1);
+	        }
+	        int rooms = 0;
+	        int res = 0;
+	        int preyear=-1;
+	        List<String> list=new ArrayList<String>();
+	        for(Map.Entry<Integer, Integer> cur:map.entrySet()) {
+	            //if(preyear!=-1&&cur.getValue()!=0){
+	        	if(preyear!=-1){
+		           list.add(preyear+"-"+cur.getKey()+": "+rooms);
+	            }
+	            //if there is a room number change, update the preyear;
+	            //if(cur.getValue()!=0){
+	            ///	preyear=cur.getKey();
+	            //}
+	            preyear=cur.getKey();
+	        	rooms+=cur.getValue();
+	            res=Math.max(res, rooms);
+	        }
+	        for(String str:list){
+	        	System.out.println(str);
+	        }
+	        return res;
+	 }
+	public static void main(String[] args){
+		Interval[] intervals=new Interval[]{new Interval(2005,2016),new Interval(2008,2014),
+				new Interval(2006,2008), new Interval(2010,2014)};
+		int res=new Solution().minMeetingRoomsIII(intervals);
+		System.out.println("The minimum number of meeting rooms required is "+res+".");
+	}
+}
